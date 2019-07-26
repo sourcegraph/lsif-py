@@ -10,9 +10,9 @@ class Exporter:
         self.workspace = workspace
         self.emitter = Emitter()
 
-    def export(self, filename):
-        uri = 'TODO'  # TODO(efritz) - construct real uri
-        self.emitter.emit_metadata('0.1.0', uri, 'utf-16')
+    def export(self):
+        uri = 'file://{}'.format(os.path.abspath(self.workspace))
+        self.emitter.emit_metadata(PROTOCOL_VERSION, uri, 'utf-16')
         project_id = self.emitter.emit_project('py')
         self._export_files_recursively(project_id)
         return self
