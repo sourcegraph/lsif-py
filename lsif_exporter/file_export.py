@@ -24,7 +24,7 @@ class FileExporter:
         self.document_id = self.emitter.emit_document(
             'file://{}'.format(os.path.abspath(filename)),
             'py',
-            base64.b64encode(source.encode('utf-8')).decode(),
+            hash_source(source),
         )
 
         self._export_defs()
@@ -118,3 +118,7 @@ class DefinitionMeta:
         self.range_id = range_id
         self.result_set_id = result_set_id
         self.contents = contents
+
+
+def hash_source(source):
+    return base64.b64encode(source.encode('utf-8')).decode()
