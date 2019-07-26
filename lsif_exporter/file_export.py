@@ -35,11 +35,14 @@ class FileExporter:
         self._export_defs()
         self._export_uses()
 
+        for definition, meta in self.definition_metas.items():
+            self._export_def_post_use(definition, meta)
+
         self.emitter.emit_contains(self.project_id, [self.document_id])
 
         meta_set = self.definition_metas.values()
         definition_range_ids = map(lambda m: m.range_id, meta_set)
-        all_range_ids = list(definition_range_ids) + self.reference_range_ids
+        all_range_ids = list(set(list(definition_range_ids) + self.reference_range_ids))
 
         if all_range_ids:
             self.emitter.emit_contains(self.document_id, all_range_ids)
@@ -98,7 +101,7 @@ class FileExporter:
             contents,
         )
 
-    def _export_def_post_use(self, definition, meta, reference_range_ids):
+    def _export_def_post_use(self, definition, meta):
         result_id = self.emitter.emit_referenceresult()
         self.emitter.emit_textdocument_references(meta.result_set_id, result_id)
         self.emitter.emit_item(
@@ -108,24 +111,23 @@ class FileExporter:
             'definitions',
         )
 
-        if len(reference_range_ids) > 0:
+        if len(meta.reference_range_ids) > 0:
             self.emitter.emit_item(
                 result_id,
-                reference_range_ids,
+                meta.reference_range_ids,
                 self.document_id,
                 'references',
             )
 
     def _export_assignment(self, definition, meta, assignment):
-        reference_range_ids = []
-        reference_range_ids.append(self._export_use(
+        range_id = self._export_use(
             definition,
             assignment,
             meta,
-        ))
+        )
 
-        self.reference_range_ids.extend(reference_range_ids)
-        self._export_def_post_use(definition, meta, reference_range_ids)
+        self.reference_range_ids.append(range_id)
+        meta.reference_range_ids.append(range_id)
 
     def _export_use(self, definition, assignment, meta):
         if definition.is_definition():
@@ -149,6 +151,7 @@ class DefinitionMeta:
         self.range_id = range_id
         self.result_set_id = result_set_id
         self.contents = contents
+        self.reference_range_ids = []
 
 
 def hash_source(source):
