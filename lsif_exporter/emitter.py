@@ -26,12 +26,11 @@ class Emitter:
         self._lines = []
 
     def print(self):
-        for line in self._lines:
-            print(json.dumps(line))
+        return '\n'.join(self._lines) + '\n'
 
     def emit(self, **kwargs):
         node_id = self._next_id
-        self._lines.append({'id': node_id, **kwargs})
+        self._lines.append(json.dumps({'id': node_id, **kwargs}))
         return node_id
 
     @property

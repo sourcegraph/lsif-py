@@ -11,9 +11,12 @@ class FileExporter:
         self.reference_range_ids = []
 
     def export(self, filename):
+        print('File: {}'.format(filename))
+
         with open(filename) as f:
             source = f.read()
 
+        self.source_lines = source.split('\n')
         self.definitions = get_definitions(source, filename)
 
         self.document_id = self.emitter.emit_document(
