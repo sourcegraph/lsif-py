@@ -1,6 +1,6 @@
 import base64
 from .definitions import get_definitions
-from .helpers import (make_ranges, wrap_contents)
+from .helpers import (definition_summary, make_ranges, wrap_contents)
 
 
 class FileExporter:
@@ -49,7 +49,7 @@ class FileExporter:
     def _export_def_pre_use(self, definition):
         contents = {
             'language': 'py',
-            'value': definition.get_line_code(),  # TODO(efritz) - trim/capture leading comments
+            'value': definition_summary(self.source_lines, definition),
         }
 
         result_set_id = self.emitter.emit_resultset()

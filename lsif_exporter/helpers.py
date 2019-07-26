@@ -1,3 +1,15 @@
+# TODO(efritz) - provide better context
+def definition_summary(source_lines, definition):
+    print(definition.line, len(source_lines))
+    print(source_lines[-5:])
+    line = source_lines[definition.line - 1]
+
+    try:
+        return line[definition.column:definition.column + len(definition.name)]
+    except IndexError:
+        return line
+
+
 def make_ranges(definition):
     return (
         make_range(definition.line, definition.column),
