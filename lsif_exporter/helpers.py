@@ -1,11 +1,26 @@
-# TODO(efritz) - provide better context
 def definition_summary(source_lines, definition):
+    lo = definition.column
+    hi = definition.column + len(definition.name)
     line = source_lines[definition.line - 1]
 
     try:
-        return line[definition.column:definition.column + len(definition.name)]
+        # TODO(efritz) - capture comments
+        return line[lo:hi].rstrip()
     except IndexError:
+        # TODO(Efritz) - shouldn't need this guard
         return line
+
+
+def highlight_range(source_lines, definition):
+    lo = definition.column
+    hi = definition.column + len(definition.name)
+    line = source_lines[definition.line - 1]
+
+    return '{}\033[4;31m{}\033[0m{}'.format(
+        line[:lo],
+        line[lo:hi],
+        line[hi:].rstrip(),
+    )
 
 
 def make_ranges(definition):

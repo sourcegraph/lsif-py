@@ -1,8 +1,13 @@
 import base64
+import jedi
 import os
 
-from .definitions import get_definitions
-from .helpers import (definition_summary, make_ranges, wrap_contents)
+from .helpers import (
+    definition_summary,
+    highlight_range,
+    make_ranges,
+    wrap_contents,
+)
 
 
 class FileExporter:
@@ -47,10 +52,34 @@ class FileExporter:
             self._export_def_pre_use(definition)
 
     def _export_uses(self):
-        for definition, meta in self.definition_metas.items():
-            self._export_assignments(definition, meta)
+        for definition in self.definitions:
+            for assignment in definition.goto_assignments():
+                meta = self.definition_metas.get(assignment)
+                if meta:
+                    if assignment == definition:
+                        assignment_summary = 'assigned by self'
+                    else:
+                        assignment_summary = 'assigned at (line {}) {}'.format(
+                            assignment.line,
+                            highlight_range(self.source_lines, assignment),
+                        )
+
+                    # TODO(efritz) - enable with verbose flag
+                    print('\tFound reference: (line {}) {} {}'.format(
+                        definition.line,
+                        highlight_range(self.source_lines, definition),
+                        assignment_summary,
+                    ))
+
+                    self._export_assignment(definition, meta, assignment)
 
     def _export_def_pre_use(self, definition):
+        # TODO(efritz) - enable with verbose flag
+        print('\tFound definition: (line {}) {}'.format(
+            definition.line,
+            highlight_range(self.source_lines, definition).strip()),
+        )
+
         contents = {
             'language': 'py',
             'value': definition_summary(self.source_lines, definition),
@@ -87,23 +116,23 @@ class FileExporter:
                 'references',
             )
 
-    def _export_assignments(self, definition, meta):
+    def _export_assignment(self, definition, meta, assignment):
         reference_range_ids = []
-        for assignment in definition.goto_assignments():
-            if assignment.line is None:
-                continue
-
-            reference_range_ids.append(self._export_use(
-                definition,
-                assignment,
-                meta,
-            ))
+        reference_range_ids.append(self._export_use(
+            definition,
+            assignment,
+            meta,
+        ))
 
         self.reference_range_ids.extend(reference_range_ids)
         self._export_def_post_use(definition, meta, reference_range_ids)
 
     def _export_use(self, definition, assignment, meta):
-        range_id = self.emitter.emit_range(*make_ranges(definition))
+        if definition.is_definition():
+            range_id = meta.range_id
+        else:
+            range_id = self.emitter.emit_range(*make_ranges(definition))
+
         result_id = self.emitter.emit_definitionresult()
         hover_id = self.emitter.emit_hoverresult(wrap_contents(meta.contents))
 
@@ -124,3 +153,12 @@ class DefinitionMeta:
 
 def hash_source(source):
     return base64.b64encode(source.encode('utf-8')).decode()
+
+
+def get_definitions(source, filename):
+    return jedi.names(
+        source,
+        path=filename,
+        all_scopes=True,
+        references=True,
+    )
