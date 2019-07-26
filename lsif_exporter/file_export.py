@@ -1,4 +1,6 @@
 import base64
+import os
+
 from .definitions import get_definitions
 from .helpers import (definition_summary, make_ranges, wrap_contents)
 
@@ -20,7 +22,7 @@ class FileExporter:
         self.definitions = get_definitions(source, filename)
 
         self.document_id = self.emitter.emit_document(
-            'TODO',  # TODO(efritz) -construct real uri
+            'file://{}'.format(os.path.abspath(filename)),
             'py',
             base64.b64encode(source.encode('utf-8')).decode(),
         )
