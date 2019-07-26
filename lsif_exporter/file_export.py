@@ -30,12 +30,14 @@ class FileExporter:
         self._export_defs()
         self._export_uses()
 
+        self.emitter.emit_contains(self.project_id, [self.document_id])
+
         meta_set = self.definition_metas.values()
         definition_range_ids = map(lambda m: m.range_id, meta_set)
         all_range_ids = list(definition_range_ids) + self.reference_range_ids
 
-        self.emitter.emit_contains(self.project_id, [self.document_id])
-        self.emitter.emit_contains(self.document_id, all_range_ids)
+        if all_range_ids:
+            self.emitter.emit_contains(self.document_id, all_range_ids)
 
     def _export_defs(self):
         for definition in self.definitions:
