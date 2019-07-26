@@ -1,7 +1,5 @@
 # TODO(efritz) - provide better context
 def definition_summary(source_lines, definition):
-    print(definition.line, len(source_lines))
-    print(source_lines[-5:])
     line = source_lines[definition.line - 1]
 
     try:
