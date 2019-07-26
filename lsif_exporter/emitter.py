@@ -48,7 +48,7 @@ def add_emitters():
         for name, fields in field_map.items():
             setattr(
                 Emitter,
-                'emit_{}'.format(name.split('/')[-1].lower()),
+                'emit_{}'.format(name.replace('/', '_').lower()),
                 make_emitter(type_name, name, fields),
             )
 

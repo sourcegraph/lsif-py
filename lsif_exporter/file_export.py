@@ -90,7 +90,7 @@ class FileExporter:
         hover_id = self.emitter.emit_hoverresult(wrap_contents(contents))
 
         self.emitter.emit_next(range_id, result_set_id)
-        self.emitter.emit_hover(result_set_id, hover_id)
+        self.emitter.emit_textdocument_hover(result_set_id, hover_id)
 
         self.definition_metas[definition] = DefinitionMeta(
             range_id,
@@ -100,7 +100,7 @@ class FileExporter:
 
     def _export_def_post_use(self, definition, meta, reference_range_ids):
         result_id = self.emitter.emit_referenceresult()
-        self.emitter.emit_references(meta.result_set_id, result_id)
+        self.emitter.emit_textdocument_references(meta.result_set_id, result_id)
         self.emitter.emit_item(
             result_id,
             [meta.range_id],
@@ -137,9 +137,9 @@ class FileExporter:
         hover_id = self.emitter.emit_hoverresult(wrap_contents(meta.contents))
 
         self.emitter.emit_next(range_id, meta.result_set_id)
-        self.emitter.emit_definition(meta.result_set_id, result_id)
+        self.emitter.emit_textdocument_definition(meta.result_set_id, result_id)
         self.emitter.emit_item(result_id, [meta.range_id], self.document_id)
-        self.emitter.emit_hover(meta.result_set_id, hover_id)
+        self.emitter.emit_textdocument_hover(meta.result_set_id, hover_id)
 
         return range_id
 
