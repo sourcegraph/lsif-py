@@ -19,7 +19,7 @@ def make_ranges(definition):
 
 def make_range(line, column):
     return {
-        'line': line,
+        'line': line - 1,
         'character': column,
     }
 
