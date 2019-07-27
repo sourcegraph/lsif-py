@@ -1,37 +1,33 @@
 import os
 
-from .consts import PROTOCOL_VERSION
+from .consts import POSITION_ENCODING, PROTOCOL_VERSION
 from .emitter import Emitter
 from .file_export import FileExporter
 
 
-class Exporter:
-    def __init__(self, workspace):
-        self.workspace = workspace
-        self.emitter = Emitter()
 
-    def export(self):
-        uri = 'file://{}'.format(os.path.abspath(self.workspace))
-        self.emitter.emit_metadata(PROTOCOL_VERSION, uri, 'utf-16')
-        project_id = self.emitter.emit_project('py')
-        self._export_files_recursively(project_id)
-        return self
+def export(workspace, writer, verbose):
+    """
+    Read each python file (recursively) in the given path and
+    write the analysis of each source file as an LSIF-dump to
+    the given file writer.
+    """
+    uri = 'file://{}'.format(os.path.abspath(workspace))
 
-    def _export_files_recursively(self, project_id):
-        for root, dirs, files in os.walk(self.workspace):
-            for file in files:
-                _, ext = os.path.splitext(file)
-                if ext != '.py':
-                    continue
+    emitter = Emitter(writer)
+    emitter.emit_metadata(PROTOCOL_VERSION, POSITION_ENCODING, uri)
+    project_id = emitter.emit_project('py')
 
-                self._export_file(os.path.join(root, file), project_id)
+    file_count = 0
+    for root, dirs, files in os.walk(workspace):
+        for file in files:
+            _, ext = os.path.splitext(file)
+            if ext != '.py':
+                continue
 
-    def _export_file(self, filename, project_id):
-        FileExporter(self.emitter, project_id).export(filename)
+            file_count += 1
+            path = os.path.join(root, file)
+            FileExporter(path, emitter, project_id, verbose).export()
 
-    def print(self):
-        return self.emitter.print()
-
-
-def export(workspace):
-    return Exporter(workspace).export().print()
+    if file_count == 0:
+        print('No files found for export')

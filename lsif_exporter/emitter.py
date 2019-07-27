@@ -1,17 +1,47 @@
 import json
 
-VERTEX_FIELD_MAP = {
+
+class Emitter:
+    """
+    Emitter writes LSIF-dump data to the given file writer. There are
+    convenience methods to generate unique vertex and edge identifiers
+    and map positional arguments ot the correct names for the label type.
+
+    The majority of the methods in this class definition are added
+    dynamically via setattr (below).
+    """
+    def __init__(self, writer):
+        self.writer = writer
+        self._lines = 0
+
+    def emit(self, **kwargs):
+        """
+        Create a vertex or a node with the given fields and append
+        it to the Emitter's output buffer. Generate and return a
+        unique identifier for this component.
+        """
+        node_id = str(self._lines + 1)
+        self._lines += 1
+        self.writer.write(json.dumps({'id': node_id, **kwargs}) + '\n')
+        return node_id
+
+
+# A map from vertex labels to the fields they support. Fields
+# are ordered based on their positional argument construction.
+VERTEX_FIELDS = {
     'definitionResult': [],
-    'document': ['uri', 'languageId', 'contents'],
+    'document': ['languageId', 'uri', 'contents'],
     'hoverResult': ['result'],
-    'metaData': ['version', 'projectRoot', 'positionEncoding'],
+    'metaData': ['version', 'positionEncoding', 'projectRoot'],
     'project': ['kind'],
     'range': ['start', 'end'],
     'referenceResult': [],
     'resultSet': [],
 }
 
-EDGE_FIELD_MAP = {
+# A map from edge labels to the fields they support. Fields
+# are ordered based on their positional argument construction.
+EDGE_FIELDS = {
     'contains': ['outV', 'inVs'],
     'item': ['outV', 'inVs', 'document', 'property'],
     'next': ['outV', 'inV'],
@@ -21,30 +51,23 @@ EDGE_FIELD_MAP = {
 }
 
 
-class Emitter:
-    def __init__(self):
-        self._lines = []
-
-    def print(self):
-        return '\n'.join(self._lines) + '\n'
-
-    def emit(self, **kwargs):
-        node_id = self._next_id
-        self._lines.append(json.dumps({'id': node_id, **kwargs}))
-        return node_id
-
-    @property
-    def _next_id(self):
-        return str(len(self._lines) + 1)
-
-
 def add_emitters():
-    pairs = [
-        ('vertex', VERTEX_FIELD_MAP),
-        ('edge', EDGE_FIELD_MAP),
-    ]
+    """
+    Add an emit_* method to the Emitter class for each vertex and
+    edge type described above. The values for each field is supplied
+    positionally and are optional.
+    """
+    def make_emitter(type_name, name, fields):
+        def emitter(self, *args):
+            return self.emit(
+                type=type_name,
+                label=name,
+                **dict(zip(fields, args)),
+            )
 
-    for type_name, field_map in pairs:
+        return emitter
+
+    for type_name, field_map in [('vertex', VERTEX_FIELDS), ('edge', EDGE_FIELDS)]:
         for name, fields in field_map.items():
             setattr(
                 Emitter,
@@ -52,16 +75,5 @@ def add_emitters():
                 make_emitter(type_name, name, fields),
             )
 
-
-def make_emitter(type_name, name, fields):
-    def emitter(self, *args):
-        return self.emit(
-            type=type_name,
-            label=name,
-            **dict(zip(fields, args)),
-        )
-
-    return emitter
-
-
+# Meta-construct the Emitter class
 add_emitters()
