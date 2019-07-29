@@ -20,7 +20,7 @@ class Emitter:
         it to the Emitter's output buffer. Generate and return a
         unique identifier for this component.
         """
-        node_id = str(self._lines + 1)
+        node_id = self._lines + 1
         self._lines += 1
         self.writer.write({'id': node_id, **kwargs})
         return node_id
@@ -34,7 +34,7 @@ class FileWriter:
         self.file = file
 
     def write(self, data):
-        self.file.write(json.dumps(data) + '\n')
+        self.file.write(json.dumps(data, separators=(',', ':')) + '\n')
 
 
 class DBWriter:
