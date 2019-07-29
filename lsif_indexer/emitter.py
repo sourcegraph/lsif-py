@@ -3,12 +3,12 @@ import json
 
 class Emitter:
     """
-    Emitter writes LSIF-dump data to the given file writer. There are
+    Emitter writes LSIF-dump data to the given writer. The location to
+    which dump data is written depends on the given writer. There are
     convenience methods to generate unique vertex and edge identifiers
-    and map positional arguments ot the correct names for the label type.
-
-    The majority of the methods in this class definition are added
-    dynamically via setattr (below).
+    and map positional arguments ot the correct names for the label
+    type. The majority of the methods in this class definition are
+    added dynamically via setattr (below).
     """
     def __init__(self, writer):
         self.writer = writer
@@ -22,8 +22,31 @@ class Emitter:
         """
         node_id = str(self._lines + 1)
         self._lines += 1
-        self.writer.write(json.dumps({'id': node_id, **kwargs}) + '\n')
+        self.writer.write({'id': node_id, **kwargs})
         return node_id
+
+
+class FileWriter:
+    """
+    FileWriter writes LSIF-dump data to the given file.
+    """
+    def __init__(self, file):
+        self.file = file
+
+    def write(self, data):
+        self.file.write(json.dumps(data) + '\n')
+
+
+class DBWriter:
+    """
+    DBWriter writes LSIF-dump data into a SQLite database.
+    """
+    def __init__(self):
+        pass
+
+    def write(self, data):
+        # TODO(efritz) - implement
+        raise RuntimeError('Unimplemented')
 
 
 # A map from vertex labels to the fields they support. Fields
@@ -74,6 +97,7 @@ def add_emitters():
                 'emit_{}'.format(name.replace('/', '_').lower()),
                 make_emitter(type_name, name, fields),
             )
+
 
 # Meta-construct the Emitter class
 add_emitters()

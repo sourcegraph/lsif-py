@@ -2,7 +2,11 @@ import base64
 import os
 
 from .analysis import get_names
-from .consts import INDENT, MAX_HIGHLIGHT_RANGE
+from .emitter import Emitter, FileWriter
+from .consts import (
+    INDENT, MAX_HIGHLIGHT_RANGE,
+    POSITION_ENCODING, PROTOCOL_VERSION,
+)
 
 
 class DefinitionMeta:
@@ -18,12 +22,12 @@ class DefinitionMeta:
         self.reference_range_ids = set()
 
 
-class FileExporter:
+class FileIndexer:
     """
     Analysis the definitions and uses in the given file and
     add an LSIF document to the emitter. As analysis is done
     on a per-file basis, this class holds the majority of the
-    exporter logic.
+    indexer logic.
     """
     def __init__(self, filename, emitter, project_id, verbose):
         self.filename = filename
@@ -32,8 +36,8 @@ class FileExporter:
         self.verbose = verbose
         self.definition_metas = {}
 
-    def export(self):
-        print('Analyzing file {}'.format(self.filename))
+    def index(self):
+        print('Indexing file {}'.format(self.filename))
 
         with open(self.filename) as f:
             source = f.read()
@@ -237,6 +241,33 @@ class FileExporter:
             name.line + 1,
             highlight_range(self.source_lines, name),
         ))
+
+
+def index(workspace, writer, verbose):
+    """
+    Read each python file (recursively) in the given path and
+    write the analysis of each source file as an LSIF-dump to
+    the given file writer.
+    """
+    uri = 'file://{}'.format(os.path.abspath(workspace))
+
+    emitter = Emitter(FileWriter(writer))
+    emitter.emit_metadata(PROTOCOL_VERSION, POSITION_ENCODING, uri)
+    project_id = emitter.emit_project('py')
+
+    file_count = 0
+    for root, dirs, files in os.walk(workspace):
+        for file in files:
+            _, ext = os.path.splitext(file)
+            if ext != '.py':
+                continue
+
+            file_count += 1
+            path = os.path.join(root, file)
+            FileIndexer(path, emitter, project_id, verbose).index()
+
+    if file_count == 0:
+        print('No files found to index')
 
 
 def make_ranges(name):
