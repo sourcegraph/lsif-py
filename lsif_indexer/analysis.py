@@ -36,6 +36,10 @@ class Name:
     def hi(self):
         return self.definition.column + len(self.definition.name)
 
+    @property
+    def docstring(self):
+        return self.definition.docstring(raw=True, fast=False)
+
     def __eq__(self, other):
         return self.definition == other.definition
 

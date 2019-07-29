@@ -96,14 +96,18 @@ class FileIndexer:
         with the generated LSIF identifiers and make it queryable by
         the same definition object.
         """
-        contents = {
+        contents = [{
             'language': 'py',
             'value': extract_text(self.source_lines, name),
-        }
+        }]
+
+        docstring = name.docstring
+        if docstring:
+            contents.append(docstring)
 
         # Emit hover tooltip and link it to a result set so that we can
         # re-use the same node for hover tooltips on usages.
-        hover_id = self.emitter.emit_hoverresult({'contents': [contents]})
+        hover_id = self.emitter.emit_hoverresult({'contents': contents})
         result_set_id = self.emitter.emit_resultset()
         self.emitter.emit_textdocument_hover(result_set_id, hover_id)
 
@@ -167,7 +171,7 @@ class FileIndexer:
         self.emitter.emit_item(result_id, [meta.range_id], self.document_id)
 
         # Add hover tooltip to use
-        hover_id = self.emitter.emit_hoverresult({'contents': [meta.contents]})
+        hover_id = self.emitter.emit_hoverresult({'contents': meta.contents})
         self.emitter.emit_textdocument_hover(meta.result_set_id, hover_id)
 
         # Bookkeep this reference for the link procedure below
@@ -284,9 +288,8 @@ def extract_text(source_lines, name):
     """
     Extract the text at the range described by the given name.
     """
-    line = source_lines[name.line]
-    # TODO(efritz) - trim line, capture comments
-    return line[name.lo:name.hi].rstrip()
+    # TODO(efritz) - highlight span
+    return source_lines[name.line].strip()
 
 
 def highlight_range(source_lines, name):
