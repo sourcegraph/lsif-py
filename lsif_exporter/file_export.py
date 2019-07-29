@@ -13,7 +13,6 @@ class DefinitionMeta:
         self.range_id = range_id
         self.result_set_id = result_set_id
         self.contents = contents
-        # Stash range_ids of all uses of this definition.
         self.reference_range_ids = set()
 
 
@@ -77,12 +76,15 @@ class FileExporter:
             'value': extract_definition_text(self.source_lines, definition),
         }
 
-        # TODO(efritz) - remove unnecessary indirection in graph
-        result_set_id = self.emitter.emit_resultset()
-        range_id = self.emitter.emit_range(*make_ranges(definition))
+        # Emit hover tooltip and link it to a result set so that we can
+        # re-use the same node for hover tooltips on usages.
         hover_id = self.emitter.emit_hoverresult({'contents': [contents]})
-        self.emitter.emit_next(range_id, result_set_id)
+        result_set_id = self.emitter.emit_resultset()
         self.emitter.emit_textdocument_hover(result_set_id, hover_id)
+
+        # Link result set to range
+        range_id = self.emitter.emit_range(*make_ranges(definition))
+        self.emitter.emit_next(range_id, result_set_id)
 
         # Stash the identifiers generated above so we can use then
         # when exporting related uses.
@@ -131,12 +133,14 @@ class FileExporter:
             # This must be a unique name, generate a new range vertex
             range_id = self.emitter.emit_range(*make_ranges(definition))
 
-        # TODO(efritz) - remove unnecessary indirection in graph
-        result_id = self.emitter.emit_definitionresult()
-        hover_id = self.emitter.emit_hoverresult({'contents': [meta.contents]})
+        # Link use range to definition resultset
         self.emitter.emit_next(range_id, meta.result_set_id)
+        result_id = self.emitter.emit_definitionresult()
         self.emitter.emit_textdocument_definition(meta.result_set_id, result_id)
         self.emitter.emit_item(result_id, [meta.range_id], self.document_id)
+
+        # Add hover tooltip to use
+        hover_id = self.emitter.emit_hoverresult({'contents': [meta.contents]})
         self.emitter.emit_textdocument_hover(meta.result_set_id, hover_id)
 
         # Bookkeep this reference for the link procedure below
