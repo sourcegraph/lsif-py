@@ -170,10 +170,6 @@ class FileIndexer:
         self.emitter.emit_textdocument_definition(meta.result_set_id, result_id)
         self.emitter.emit_item(result_id, [meta.range_id], self.document_id)
 
-        # Add hover tooltip to use
-        hover_id = self.emitter.emit_hoverresult({'contents': meta.contents})
-        self.emitter.emit_textdocument_hover(meta.result_set_id, hover_id)
-
         # Bookkeep this reference for the link procedure below
         meta.reference_range_ids.add(range_id)
 
