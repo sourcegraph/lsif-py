@@ -30,11 +30,12 @@ class FileIndexer:
     on a per-file basis, this class holds the majority of the
     indexer logic.
     """
-    def __init__(self, filename, emitter, project_id, verbose):
+    def __init__(self, filename, emitter, project_id, verbose, exclude_content):
         self.filename = filename
         self.emitter = emitter
         self.project_id = project_id
         self.verbose = verbose
+        self.exclude_content = exclude_content
         self.definition_metas = {}
 
     def index(self):
@@ -44,11 +45,16 @@ class FileIndexer:
             source = f.read()
         self.source_lines = source.split('\n')
 
-        self.document_id = self.emitter.emit_document(
+        document_args = [
             'py',
             'file://{}'.format(os.path.abspath(self.filename)),
-            base64.b64encode(source.encode('utf-8')).decode(),
-        )
+        ]
+
+        if not self.exclude_content:
+            encoded = base64.b64encode(source.encode('utf-8')).decode()
+            document_args.append(encoded)
+
+        self.document_id = self.emitter.emit_document(*document_args)
 
         with scope_events(self.emitter, 'document', self.document_id):
             self._index(source)
@@ -248,7 +254,7 @@ class FileIndexer:
         ))
 
 
-def index(workspace, writer, verbose):
+def index(workspace, writer, verbose, exclude_content):
     """
     Read each python file (recursively) in the given path and
     write the analysis of each source file as an LSIF-dump to
@@ -270,7 +276,14 @@ def index(workspace, writer, verbose):
 
                 file_count += 1
                 path = os.path.join(root, file)
-                FileIndexer(path, emitter, project_id, verbose).index()
+
+                FileIndexer(
+                    path,
+                    emitter,
+                    project_id,
+                    verbose,
+                    exclude_content,
+                ).index()
 
     if file_count == 0:
         print('No files found to index')
