@@ -1,4 +1,5 @@
 import base64
+import contextlib
 import os
 
 from .analysis import get_names
@@ -49,6 +50,10 @@ class FileIndexer:
             base64.b64encode(source.encode('utf-8')).decode(),
         )
 
+        with scope_events(self.emitter, 'document', self.document_id):
+            self._index(source)
+
+    def _index(self, source):
         # Do an initial analysis to get a list of names from
         # the source file. Some additional analysis may be
         # done lazily in later steps when needed.
@@ -259,19 +264,27 @@ def index(workspace, writer, verbose):
     emitter.emit_metadata(PROTOCOL_VERSION, POSITION_ENCODING, uri)
     project_id = emitter.emit_project('py')
 
-    file_count = 0
-    for root, dirs, files in os.walk(workspace):
-        for file in files:
-            _, ext = os.path.splitext(file)
-            if ext != '.py':
-                continue
+    with scope_events(emitter, 'project', project_id):
+        file_count = 0
+        for root, dirs, files in os.walk(workspace):
+            for file in files:
+                _, ext = os.path.splitext(file)
+                if ext != '.py':
+                    continue
 
-            file_count += 1
-            path = os.path.join(root, file)
-            FileIndexer(path, emitter, project_id, verbose).index()
+                file_count += 1
+                path = os.path.join(root, file)
+                FileIndexer(path, emitter, project_id, verbose).index()
 
     if file_count == 0:
         print('No files found to index')
+
+
+@contextlib.contextmanager
+def scope_events(emitter, scope, id):
+    emitter.emit_event('begin', scope, id)
+    yield
+    emitter.emit_event('end', scope, id)
 
 
 def make_ranges(name):

@@ -52,6 +52,7 @@ class DBWriter:
 # A map from vertex labels to the fields they support. Fields
 # are ordered based on their positional argument construction.
 VERTEX_FIELDS = {
+    '$event': ['kind', 'scope', 'data'],
     'definitionResult': [],
     'document': ['languageId', 'uri', 'contents'],
     'hoverResult': ['result'],
@@ -94,7 +95,7 @@ def add_emitters():
         for name, fields in field_map.items():
             setattr(
                 Emitter,
-                'emit_{}'.format(name.replace('/', '_').lower()),
+                'emit_{}'.format(name.replace('$', '').replace('/', '_').lower()),
                 make_emitter(type_name, name, fields),
             )
 
