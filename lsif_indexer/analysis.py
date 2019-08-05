@@ -22,7 +22,7 @@ class Name:
         will only include one object. If this name is a definition,
         the list will include itself.
         """
-        return [Name(a) for a in self.definition.goto_assignments()]
+        return [Name(a) for a in self.definition.goto_assignments() if a != self.definition]
 
     @property
     def line(self):
