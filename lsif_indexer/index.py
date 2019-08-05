@@ -21,6 +21,7 @@ class DefinitionMeta:
         self.result_set_id = result_set_id
         self.contents = contents
         self.reference_range_ids = set()
+        self.definition_result_id = 0
 
 
 class FileIndexer:
@@ -177,9 +178,13 @@ class FileIndexer:
 
         # Link use range to definition resultset
         self.emitter.emit_next(range_id, meta.result_set_id)
-        result_id = self.emitter.emit_definitionresult()
-        self.emitter.emit_textdocument_definition(meta.result_set_id, result_id)
-        self.emitter.emit_item(result_id, [meta.range_id], self.document_id)
+
+        if not meta.definition_result_id:
+            result_id = self.emitter.emit_definitionresult()
+            self.emitter.emit_textdocument_definition(meta.result_set_id, result_id)
+            meta.definition_result_id = result_id
+
+        self.emitter.emit_item(meta.definition_result_id, [meta.range_id], self.document_id)
 
         # Bookkeep this reference for the link procedure below
         meta.reference_range_ids.add(range_id)
