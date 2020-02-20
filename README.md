@@ -6,9 +6,9 @@
 
 The purpose of the Language Server Index Format (LSIF) is to define a standard format for language servers and related tools to dump their knowledge about a workspace. The dump is basically a pre-computed set of responses that a language server *would* send back about a particular range of source code.
 
-## Quickstart
+## Basic Usage
 
-Simply run the provided shell script wrapper.
+To run the indexer, simply run the provided shell script wrapper and provide a workspace directory to be indexed.
 
 ```
 $ ./lsif-py lsif_indexer
@@ -23,3 +23,33 @@ Processed in 2834.89ms
 ```
 
 Verbose logging can be enabled with `-v`. The dump file is `data.lsif` by default, but can be changed via the `-o <filename>` flag.
+
+## Installation Notes
+
+The indexer requires Python 3.x. To install dependencies, run:
+
+```shell
+pip install -r requirements.txt
+```
+
+If you don't want to install dependencies globally, use `virtualenv`:
+
+```shell
+$ virtualenv venv
+$ source venv/bin/activate
+(venv) $ pip install -r requirements.txt
+(venv) $ ./lsif-py lsif_indexer
+# ...
+(venv) $ deactivate
+$
+```
+
+### Installation on macOS
+
+On macOS, where the system Python on macOS is still 2.7.x, you can install Python 3 via [Homebrew](https://brew.sh/):
+
+```shell
+brew install python@3
+```
+
+You may need to write `pip3` instead of `pip` to get the correct version.
