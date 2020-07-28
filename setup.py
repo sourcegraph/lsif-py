@@ -7,7 +7,7 @@ setuptools.setup(
     name="lsif-py",
     version="0.0.1",
     author="Eric Fritz",
-    author_email="eric@eric-fritz.com",
+    author_email="eric@sourcegraph.com",
     description="Python LSIF Indexer",
     entry_points={"console_scripts": ["lsif-py=lsif_indexer.script:main"],},
     long_description=long_description,
