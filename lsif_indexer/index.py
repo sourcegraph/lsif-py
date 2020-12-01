@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from typing import List, Set, IO, Tuple, Dict
 
 from lsif_indexer.analysis import get_names, Name
-from lsif_indexer.emitter import Emitter, FileWriter
+from lsif_indexer.emitter import Emitter, FileWriter, RangeValue
 from lsif_indexer.consts import INDENT, MAX_HIGHLIGHT_RANGE, POSITION_ENCODING, PROTOCOL_VERSION
 
 
@@ -51,13 +51,15 @@ class FileIndexer:
             source = f.read()
         self.source_lines = source.split("\n")
 
-        document_args = ["py", "file://{}".format(os.path.abspath(self.filename))]
-
-        if not self.exclude_content:
-            encoded = base64.b64encode(source.encode("utf-8")).decode()
-            document_args.append(encoded)
-
-        self.document_id = self.emitter.emit_document(*document_args)
+        self.document_id = self.emitter.emit_document(
+            language_id="py",
+            uri=f"file://{os.path.abspath(self.filename)}",
+            contents=(
+                base64.b64encode(source.encode("utf-8")).decode()
+                if not self.exclude_content
+                else None
+            ),
+        )
 
         with scope_events(self.emitter, "document", self.document_id):
             self._index(source)
@@ -285,7 +287,7 @@ def scope_events(emitter: Emitter, scope: str, id_: int):
     emitter.emit_event("end", scope, id_)
 
 
-def make_ranges(name: Name) -> Tuple[Dict[str, int], Dict[str, int]]:
+def make_ranges(name: Name) -> Tuple[RangeValue, RangeValue]:
     """
     Return a start and end range values for a range vertex.
     """
