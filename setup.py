@@ -9,7 +9,7 @@ setuptools.setup(
     author="Eric Fritz",
     author_email="eric@sourcegraph.com",
     description="Python LSIF Indexer",
-    entry_points={"console_scripts": ["lsif-py=lsif_indexer.script:main"],},
+    entry_points={"console_scripts": ["lsif-py=lsif_indexer.script:main"]},
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/sourcegraph/lsif-py",
