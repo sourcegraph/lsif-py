@@ -1,9 +1,9 @@
 import json
-from typing import IO, Dict
+from typing import IO, Dict, List, Callable
 
 # A map from vertex labels to the fields they support. Fields
 # are ordered based on their positional argument construction.
-VERTEX_FIELDS = {
+VERTEX_FIELDS: Dict[str, List[str]] = {
     "$event": ["kind", "scope", "data"],
     "definitionResult": [],
     "document": ["languageId", "uri", "contents"],
@@ -17,7 +17,7 @@ VERTEX_FIELDS = {
 
 # A map from edge labels to the fields they support. Fields
 # are ordered based on their positional argument construction.
-EDGE_FIELDS = {
+EDGE_FIELDS: Dict[str, List[str]] = {
     "contains": ["outV", "inVs"],
     "item": ["outV", "inVs", "document", "property"],
     "next": ["outV", "inV"],
@@ -32,11 +32,9 @@ def _get_emitter_emit_name(base_name: str) -> str:
     return f"emit_{name}"
 
 
-def _make_emitter(type_name, name, fields):
+def _make_emitter(type_name: str, name: str, fields: List[str]) -> Callable[[...], int]:
     def emitter(self, *args):
-        return self.emit(
-            type=type_name, label=name, **dict(zip(fields, args))
-        )
+        return self.emit(type=type_name, label=name, **dict(zip(fields, args)))
 
     return emitter
 
@@ -51,25 +49,18 @@ class Emitter:
     added dynamically via setattr (below).
     """
 
-    def __init__(self, writer):
+    def __init__(self, writer: "BaseWriter"):
         self.writer = writer
         self._lines = 0
 
         # Add an emit_ * method to the Emitter class for each vertex
         # and edge type described above. The values for each field is
         # supplied positionally and are optional.
-        for type_name, field_map in [
-            ("vertex", VERTEX_FIELDS),
-            ("edge", EDGE_FIELDS),
-        ]:
+        for type_name, field_map in [("vertex", VERTEX_FIELDS), ("edge", EDGE_FIELDS)]:
             for name, fields in field_map.items():
-                setattr(
-                    self,
-                    _get_emitter_emit_name(name),
-                    _make_emitter(type_name, name, fields),
-                )
+                setattr(self, _get_emitter_emit_name(name), _make_emitter(type_name, name, fields))
 
-    def emit(self, **kwargs):
+    def emit(self, **kwargs) -> int:
         """
         Create a vertex or a node with the given fields and append
         it to the Emitter's output buffer. Generate and return a
@@ -82,7 +73,7 @@ class Emitter:
 
 
 class BaseWriter:
-    def write(self, data: IO):
+    def write(self, data: Dict):
         raise NotImplementedError
 
 
@@ -95,9 +86,7 @@ class FileWriter(BaseWriter):
         self.file = file
 
     def write(self, data: Dict):
-        self.file.write(
-            json.dumps(data, separators=(",", ":")) + "\n"
-        )
+        self.file.write(json.dumps(data, separators=(",", ":")) + "\n")
 
 
 class DBWriter(BaseWriter):
@@ -105,6 +94,6 @@ class DBWriter(BaseWriter):
     DBWriter writes LSIF-dump data into a SQLite database.
     """
 
-    def write(self, data):
+    def write(self, data: Dict):
         # TODO(efritz) - implement
         super().write(data)

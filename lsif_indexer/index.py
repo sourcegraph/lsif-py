@@ -1,12 +1,15 @@
 import base64
 import contextlib
 import os
+from dataclasses import dataclass, field
+from typing import List, Set, IO, Tuple, Dict
 
-from lsif_indexer.analysis import get_names
+from lsif_indexer.analysis import get_names, Name
 from lsif_indexer.emitter import Emitter, FileWriter
 from lsif_indexer.consts import INDENT, MAX_HIGHLIGHT_RANGE, POSITION_ENCODING, PROTOCOL_VERSION
 
 
+@dataclass
 class DefinitionMeta:
     """
     A bag of properties around a single source definition.
@@ -14,14 +17,15 @@ class DefinitionMeta:
     when later linking a name reference to its definition.
     """
 
-    def __init__(self, range_id, result_set_id, contents):
-        self.range_id = range_id
-        self.result_set_id = result_set_id
-        self.contents = contents
-        self.reference_range_ids = set()
-        self.definition_result_id = 0
+    range_id: int
+    result_set_id: int
+    contents: List
+
+    reference_range_ids: Set = field(default_factory=set)
+    definition_result_id: int = 0
 
 
+@dataclass
 class FileIndexer:
     """
     Analysis the definitions and uses in the given file and
@@ -30,13 +34,15 @@ class FileIndexer:
     indexer logic.
     """
 
-    def __init__(self, filename, emitter, project_id, verbose, exclude_content):
-        self.filename = filename
-        self.emitter = emitter
-        self.project_id = project_id
-        self.verbose = verbose
-        self.exclude_content = exclude_content
-        self.definition_metas = {}
+    filename: str
+    emitter: Emitter
+    project_id: int
+    verbose: bool = False
+    exclude_content: bool = False
+
+    source_lines: List[str] = None
+    document_id: int = None
+    definition_metas: Dict[Name, DefinitionMeta] = field(default_factory=dict)
 
     def index(self):
         print("Indexing file {}".format(self.filename))
@@ -56,7 +62,7 @@ class FileIndexer:
         with scope_events(self.emitter, "document", self.document_id):
             self._index(source)
 
-    def _index(self, source):
+    def _index(self, source: str):
         # Do an initial analysis to get a list of names from
         # the source file. Some additional analysis may be
         # done lazily in later steps when needed.
@@ -97,7 +103,7 @@ class FileIndexer:
         # Finally, link uses to their containing document
         self._emit_contains()
 
-    def _export_definition(self, name):
+    def _export_definition(self, name: Name):
         """
         Emit vertices and edges related directly to the definition of
         or assignment to a variable. Create a definition meta object
@@ -127,7 +133,7 @@ class FileIndexer:
         # Print progress
         self._debug_def(name)
 
-    def _export_uses(self, name):
+    def _export_uses(self, name: Name):
         """
         Emit vertices and edges related to any use of a definition.
         The definition must have already been exported by the above
@@ -136,14 +142,13 @@ class FileIndexer:
         try:
             definitions = name.definitions()
         except Exception as ex:
+            print(f"Failed to retrieve definitions: {ex}")
             raise
-            print("Failed to retrieve definitions: {}".format(str(ex)))
-            return
 
         for definition in definitions:
             self._export_use(name, definition)
 
-    def _export_use(self, name, definition):
+    def _export_use(self, name: Name, definition: Name):
         """
         Emit vertices and edges directly related to a single use of
         a definition.
@@ -178,7 +183,7 @@ class FileIndexer:
         # Bookkeep this reference for the link procedure below
         meta.reference_range_ids.add(range_id)
 
-    def _link_uses(self, name, meta):
+    def _link_uses(self, name: Name, meta: DefinitionMeta):
         """
         Emit vertices and edges related to the relationship between a definition
         and it use(s).
@@ -217,7 +222,7 @@ class FileIndexer:
     #
     # Debugging Methods
 
-    def _debug_def(self, name):
+    def _debug_def(self, name: Name):
         if not self.verbose:
             return
 
@@ -244,13 +249,13 @@ class FileIndexer:
         )
 
 
-def index(workspace, writer, verbose, exclude_content):
+def index(workspace: str, writer: IO, verbose: bool, exclude_content: bool):
     """
     Read each python file (recursively) in the given path and
     write the analysis of each source file as an LSIF-dump to
     the given file writer.
     """
-    uri = "file://{}".format(os.path.abspath(workspace))
+    uri = f"file://{os.path.abspath(workspace)}"
 
     emitter = Emitter(FileWriter(writer))
     emitter.emit_metadata(PROTOCOL_VERSION, POSITION_ENCODING, uri)
@@ -274,20 +279,20 @@ def index(workspace, writer, verbose, exclude_content):
 
 
 @contextlib.contextmanager
-def scope_events(emitter, scope, id):
-    emitter.emit_event("begin", scope, id)
+def scope_events(emitter: Emitter, scope: str, id_: int):
+    emitter.emit_event("begin", scope, id_)
     yield
-    emitter.emit_event("end", scope, id)
+    emitter.emit_event("end", scope, id_)
 
 
-def make_ranges(name):
+def make_ranges(name: Name) -> Tuple[Dict[str, int], Dict[str, int]]:
     """
     Return a start and end range values for a range vertex.
     """
-    return ({"line": name.line, "character": name.lo}, {"line": name.line, "character": name.hi})
+    return {"line": name.line, "character": name.lo}, {"line": name.line, "character": name.hi}
 
 
-def extract_text(source_lines, name):
+def extract_text(source_lines: List[str], name: Name) -> str:
     """
     Extract the text at the range described by the given name.
     """
@@ -295,7 +300,7 @@ def extract_text(source_lines, name):
     return source_lines[name.line].strip()
 
 
-def highlight_range(source_lines, name):
+def highlight_range(source_lines: List[str], name: Name) -> str:
     """
     Return the source line where the name occurs with the range
     described by the name highlighted with an ANSI code.
@@ -320,7 +325,7 @@ def highlight_range(source_lines, name):
     # string and leave the highlighted portion somewhere in the
     # middle.
 
-    while len(line) > MAX_HIGHLIGHT_RANGE and (hi - lo) < MAX_HIGHLIGHT_RANGE:
+    while len(line) > MAX_HIGHLIGHT_RANGE > (hi - lo):
         trimmable_lo = lo > 0
         trimmable_hi = len(line) - hi - 1
 
