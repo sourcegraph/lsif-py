@@ -118,9 +118,9 @@ class FileIndexer:
 
         # Emit hover tooltip and link it to a result set so that we can
         # re-use the same node for hover tooltips on usages.
-        hover_id = self.emitter.emit_hoverresult({"contents": contents})
-        result_set_id = self.emitter.emit_resultset()
-        self.emitter.emit_textdocument_hover(result_set_id, hover_id)
+        hover_id = self.emitter.emit_hover_result({"contents": contents})
+        result_set_id = self.emitter.emit_result_set()
+        self.emitter.emit_text_document_hover(result_set_id, hover_id)
 
         # Link result set to range
         range_id = self.emitter.emit_range(*make_ranges(name))
@@ -174,8 +174,8 @@ class FileIndexer:
         self.emitter.emit_next(range_id, meta.result_set_id)
 
         if not meta.definition_result_id:
-            result_id = self.emitter.emit_definitionresult()
-            self.emitter.emit_textdocument_definition(meta.result_set_id, result_id)
+            result_id = self.emitter.emit_definition_result()
+            self.emitter.emit_text_document_definition(meta.result_set_id, result_id)
             meta.definition_result_id = result_id
 
         self.emitter.emit_item(meta.definition_result_id, [meta.range_id], self.document_id)
@@ -191,8 +191,8 @@ class FileIndexer:
         if len(meta.reference_range_ids) == 0:
             return
 
-        result_id = self.emitter.emit_referenceresult()
-        self.emitter.emit_textdocument_references(meta.result_set_id, result_id)
+        result_id = self.emitter.emit_reference_result()
+        self.emitter.emit_text_document_references(meta.result_set_id, result_id)
         self.emitter.emit_item(result_id, [meta.range_id], self.document_id, "definitions")
 
         self.emitter.emit_item(

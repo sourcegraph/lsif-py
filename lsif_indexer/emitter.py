@@ -1,42 +1,11 @@
+from enum import Enum
 import json
-from typing import IO, Dict, List, Callable
-
-# A map from vertex labels to the fields they support. Fields
-# are ordered based on their positional argument construction.
-VERTEX_FIELDS: Dict[str, List[str]] = {
-    "$event": ["kind", "scope", "data"],
-    "definitionResult": [],
-    "document": ["languageId", "uri", "contents"],
-    "hoverResult": ["result"],
-    "metaData": ["version", "positionEncoding", "projectRoot"],
-    "project": ["kind"],
-    "range": ["start", "end"],
-    "referenceResult": [],
-    "resultSet": [],
-}
-
-# A map from edge labels to the fields they support. Fields
-# are ordered based on their positional argument construction.
-EDGE_FIELDS: Dict[str, List[str]] = {
-    "contains": ["outV", "inVs"],
-    "item": ["outV", "inVs", "document", "property"],
-    "next": ["outV", "inV"],
-    "textDocument/definition": ["outV", "inV"],
-    "textDocument/hover": ["outV", "inV"],
-    "textDocument/references": ["outV", "inV"],
-}
+from typing import IO, Dict
 
 
-def _get_emitter_emit_name(base_name: str) -> str:
-    name = base_name.replace("$", "").replace("/", "_").lower()
-    return f"emit_{name}"
-
-
-def _make_emitter(type_name: str, name: str, fields: List[str]) -> Callable[[...], int]:
-    def emitter(self, *args):
-        return self.emit(type=type_name, label=name, **dict(zip(fields, args)))
-
-    return emitter
+class EmitterNode(Enum):
+    vertex = "vertex"
+    edge = "edge"
 
 
 class Emitter:
@@ -53,14 +22,7 @@ class Emitter:
         self.writer = writer
         self._lines = 0
 
-        # Add an emit_ * method to the Emitter class for each vertex
-        # and edge type described above. The values for each field is
-        # supplied positionally and are optional.
-        for type_name, field_map in [("vertex", VERTEX_FIELDS), ("edge", EDGE_FIELDS)]:
-            for name, fields in field_map.items():
-                setattr(self, _get_emitter_emit_name(name), _make_emitter(type_name, name, fields))
-
-    def emit(self, **kwargs) -> int:
+    def emit(self, *, type: EmitterNode, label: str, **kwargs) -> int:
         """
         Create a vertex or a node with the given fields and append
         it to the Emitter's output buffer. Generate and return a
@@ -68,8 +30,80 @@ class Emitter:
         """
         node_id = self._lines + 1
         self._lines += 1
-        self.writer.write({"id": node_id, **kwargs})
+        self.writer.write({"id": node_id, "type": type.value, "label": label, **kwargs})
         return node_id
+
+    # Vertex Emits
+
+    def emit_event(self, kind, scope, data) -> int:
+        return self.emit(type=EmitterNode.vertex, label="event", kind=kind, scope=scope, data=data)
+
+    def emit_definition_result(self) -> int:
+        return self.emit(type=EmitterNode.vertex, label="definitionResult")
+
+    def emit_document(self, language_id, uri, contents) -> int:
+        return self.emit(
+            type=EmitterNode.vertex,
+            label="document",
+            languageId=language_id,
+            uri=uri,
+            contents=contents,
+        )
+
+    def emit_hover_result(self, result) -> int:
+        return self.emit(type=EmitterNode.vertex, label="hoverResult", result=result)
+
+    def emit_metadata(self, version, position_encoding, project_root) -> int:
+        return self.emit(
+            type=EmitterNode.vertex,
+            label="metaData",
+            version=version,
+            positionEncoding=position_encoding,
+            projectRoot=project_root,
+        )
+
+    def emit_project(self, kind) -> int:
+        return self.emit(type=EmitterNode.vertex, label="project", kind=kind)
+
+    def emit_range(self, start, end) -> int:
+        return self.emit(type=EmitterNode.vertex, label="range", start=start, end=end)
+
+    def emit_reference_result(self) -> int:
+        return self.emit(type=EmitterNode.vertex, label="referenceResult")
+
+    def emit_result_set(self) -> int:
+        return self.emit(type=EmitterNode.vertex, label="resultSet")
+
+    # Edge Emits
+
+    def emit_contains(self, out_v, in_vs) -> int:
+        return self.emit(type=EmitterNode.edge, label="contains", outV=out_v, inVs=in_vs)
+
+    def emit_item(self, out_v, in_vs, document, property) -> int:
+        return self.emit(
+            type=EmitterNode.edge,
+            label="contains",
+            outV=out_v,
+            inVs=in_vs,
+            document=document,
+            property=property,
+        )
+
+    def emit_next(self, out_v, in_v) -> int:
+        return self.emit(type=EmitterNode.edge, label="contains", outV=out_v, inV=in_v)
+
+    def emit_text_document_definition(self, out_v, in_v) -> int:
+        return self.emit(
+            type=EmitterNode.edge, label="textDocument/definition", outV=out_v, inV=in_v
+        )
+
+    def emit_text_document_hover(self, out_v, in_v) -> int:
+        return self.emit(type=EmitterNode.edge, label="textDocument/hover", outV=out_v, inV=in_v)
+
+    def emit_text_document_references(self, out_v, in_v) -> int:
+        return self.emit(
+            type=EmitterNode.edge, label="textDocument/references", outV=out_v, inV=in_v
+        )
 
 
 class BaseWriter:
