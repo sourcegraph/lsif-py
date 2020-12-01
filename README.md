@@ -53,3 +53,7 @@ brew install python@3
 ```
 
 You may need to write `pip3` instead of `pip` to get the correct version.
+
+## Styling
+
+[Black](https://github.com/psf/black) is used for code formatting and is configured in `pyproject.toml`.
