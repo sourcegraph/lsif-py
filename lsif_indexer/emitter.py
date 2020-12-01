@@ -50,7 +50,7 @@ class Emitter:
     # Vertex Emits
 
     def emit_event(self, kind: str, scope: str, data: int) -> int:
-        return self.emit(type=EmitterNode.vertex, label="event", kind=kind, scope=scope, data=data)
+        return self.emit(type=EmitterNode.vertex, label="$event", kind=kind, scope=scope, data=data)
 
     def emit_definition_result(self) -> int:
         return self.emit(type=EmitterNode.vertex, label="definitionResult")
