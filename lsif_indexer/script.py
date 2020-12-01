@@ -1,8 +1,8 @@
 import argparse
 import time
 
-from .consts import INDEXER_VERSION, PROTOCOL_VERSION
-from .index import index
+from lsif_indexer.consts import INDEXER_VERSION, PROTOCOL_VERSION
+from lsif_indexer.index import index
 
 
 def main():
