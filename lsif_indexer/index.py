@@ -5,8 +5,10 @@ import os
 from .analysis import get_names
 from .emitter import Emitter, FileWriter
 from .consts import (
-    INDENT, MAX_HIGHLIGHT_RANGE,
-    POSITION_ENCODING, PROTOCOL_VERSION,
+    INDENT,
+    MAX_HIGHLIGHT_RANGE,
+    POSITION_ENCODING,
+    PROTOCOL_VERSION,
 )
 
 
@@ -16,6 +18,7 @@ class DefinitionMeta:
     This contains previously generated identifiers needed
     when later linking a name reference to its definition.
     """
+
     def __init__(self, range_id, result_set_id, contents):
         self.range_id = range_id
         self.result_set_id = result_set_id
@@ -31,7 +34,10 @@ class FileIndexer:
     on a per-file basis, this class holds the majority of the
     indexer logic.
     """
-    def __init__(self, filename, emitter, project_id, verbose, exclude_content):
+
+    def __init__(
+        self, filename, emitter, project_id, verbose, exclude_content
+    ):
         self.filename = filename
         self.emitter = emitter
         self.project_id = project_id
@@ -40,24 +46,24 @@ class FileIndexer:
         self.definition_metas = {}
 
     def index(self):
-        print('Indexing file {}'.format(self.filename))
+        print("Indexing file {}".format(self.filename))
 
         with open(self.filename) as f:
             source = f.read()
-        self.source_lines = source.split('\n')
+        self.source_lines = source.split("\n")
 
         document_args = [
-            'py',
-            'file://{}'.format(os.path.abspath(self.filename)),
+            "py",
+            "file://{}".format(os.path.abspath(self.filename)),
         ]
 
         if not self.exclude_content:
-            encoded = base64.b64encode(source.encode('utf-8')).decode()
+            encoded = base64.b64encode(source.encode("utf-8")).decode()
             document_args.append(encoded)
 
         self.document_id = self.emitter.emit_document(*document_args)
 
-        with scope_events(self.emitter, 'document', self.document_id):
+        with scope_events(self.emitter, "document", self.document_id):
             self._index(source)
 
     def _index(self, source):
@@ -68,7 +74,7 @@ class FileIndexer:
         self.names = get_names(source, self.filename)
 
         if self.verbose:
-            print('{}Searching for defs'.format(INDENT))
+            print("{}Searching for defs".format(INDENT))
 
         # First emit everything for names defined in this
         # file. This needs to be done first as edges need
@@ -80,7 +86,7 @@ class FileIndexer:
                 self._export_definition(name)
 
         if self.verbose:
-            print('{}Searching for uses'.format(INDENT))
+            print("{}Searching for uses".format(INDENT))
 
         # Next, we can emit uses. Some of these names may
         # reference a definition from another file or a
@@ -108,10 +114,9 @@ class FileIndexer:
         with the generated LSIF identifiers and make it queryable by
         the same definition object.
         """
-        contents = [{
-            'language': 'py',
-            'value': extract_text(self.source_lines, name),
-        }]
+        contents = [
+            {"language": "py", "value": extract_text(self.source_lines, name)}
+        ]
 
         docstring = name.docstring
         if docstring:
@@ -119,7 +124,7 @@ class FileIndexer:
 
         # Emit hover tooltip and link it to a result set so that we can
         # re-use the same node for hover tooltips on usages.
-        hover_id = self.emitter.emit_hoverresult({'contents': contents})
+        hover_id = self.emitter.emit_hoverresult({"contents": contents})
         result_set_id = self.emitter.emit_resultset()
         self.emitter.emit_textdocument_hover(result_set_id, hover_id)
 
@@ -130,9 +135,7 @@ class FileIndexer:
         # Stash the identifiers generated above so we can use then
         # when exporting related uses.
         self.definition_metas[name] = DefinitionMeta(
-            range_id,
-            result_set_id,
-            contents,
+            range_id, result_set_id, contents
         )
 
         # Print progress
@@ -148,7 +151,7 @@ class FileIndexer:
             definitions = name.definitions()
         except Exception as ex:
             raise
-            print('Failed to retrieve definitions: {}'.format(str(ex)))
+            print("Failed to retrieve definitions: {}".format(str(ex)))
             return
 
         for definition in definitions:
@@ -181,36 +184,38 @@ class FileIndexer:
 
         if not meta.definition_result_id:
             result_id = self.emitter.emit_definitionresult()
-            self.emitter.emit_textdocument_definition(meta.result_set_id, result_id)
+            self.emitter.emit_textdocument_definition(
+                meta.result_set_id, result_id
+            )
             meta.definition_result_id = result_id
 
-        self.emitter.emit_item(meta.definition_result_id, [meta.range_id], self.document_id)
+        self.emitter.emit_item(
+            meta.definition_result_id, [meta.range_id], self.document_id
+        )
 
         # Bookkeep this reference for the link procedure below
         meta.reference_range_ids.add(range_id)
 
     def _link_uses(self, name, meta):
-        """
-        Emit vertices and edges related to the relationship between a definition
-        and it use(s).
+        """Emit vertices and edges related to the relationship between a
+        definition and it use(s).
         """
         if len(meta.reference_range_ids) == 0:
             return
 
         result_id = self.emitter.emit_referenceresult()
-        self.emitter.emit_textdocument_references(meta.result_set_id, result_id)
+        self.emitter.emit_textdocument_references(
+            meta.result_set_id, result_id
+        )
         self.emitter.emit_item(
-            result_id,
-            [meta.range_id],
-            self.document_id,
-            'definitions',
+            result_id, [meta.range_id], self.document_id, "definitions"
         )
 
         self.emitter.emit_item(
             result_id,
             sorted(list(meta.reference_range_ids)),
             self.document_id,
-            'references',
+            "references",
         )
 
     def _emit_contains(self):
@@ -240,23 +245,27 @@ class FileIndexer:
         if not self.verbose:
             return
 
-        print('{}Def #{}, line {}: {}'.format(
-            INDENT * 2,
-            self.definition_metas.get(name).range_id,
-            name.line + 1,
-            highlight_range(self.source_lines, name).strip()),
+        print(
+            "{}Def #{}, line {}: {}".format(
+                INDENT * 2,
+                self.definition_metas.get(name).range_id,
+                name.line + 1,
+                highlight_range(self.source_lines, name).strip(),
+            )
         )
 
     def _debug_use(self, name, definition):
         if not self.verbose or name == definition:
             return
 
-        print('{}Use of #{}, line {}: {}'.format(
-            INDENT * 2,
-            self.definition_metas.get(definition).range_id,
-            name.line + 1,
-            highlight_range(self.source_lines, name),
-        ))
+        print(
+            "{}Use of #{}, line {}: {}".format(
+                INDENT * 2,
+                self.definition_metas.get(definition).range_id,
+                name.line + 1,
+                highlight_range(self.source_lines, name),
+            )
+        )
 
 
 def index(workspace, writer, verbose, exclude_content):
@@ -265,40 +274,36 @@ def index(workspace, writer, verbose, exclude_content):
     write the analysis of each source file as an LSIF-dump to
     the given file writer.
     """
-    uri = 'file://{}'.format(os.path.abspath(workspace))
+    uri = "file://{}".format(os.path.abspath(workspace))
 
     emitter = Emitter(FileWriter(writer))
     emitter.emit_metadata(PROTOCOL_VERSION, POSITION_ENCODING, uri)
-    project_id = emitter.emit_project('py')
+    project_id = emitter.emit_project("py")
 
-    with scope_events(emitter, 'project', project_id):
+    with scope_events(emitter, "project", project_id):
         file_count = 0
         for root, dirs, files in os.walk(workspace):
             for file in files:
                 _, ext = os.path.splitext(file)
-                if ext != '.py':
+                if ext != ".py":
                     continue
 
                 file_count += 1
                 path = os.path.join(root, file)
 
                 FileIndexer(
-                    path,
-                    emitter,
-                    project_id,
-                    verbose,
-                    exclude_content,
+                    path, emitter, project_id, verbose, exclude_content
                 ).index()
 
     if file_count == 0:
-        print('No files found to index')
+        print("No files found to index")
 
 
 @contextlib.contextmanager
 def scope_events(emitter, scope, id):
-    emitter.emit_event('begin', scope, id)
+    emitter.emit_event("begin", scope, id)
     yield
-    emitter.emit_event('end', scope, id)
+    emitter.emit_event("end", scope, id)
 
 
 def make_ranges(name):
@@ -306,8 +311,8 @@ def make_ranges(name):
     Return a start and end range values for a range vertex.
     """
     return (
-        {'line': name.line, 'character': name.lo},
-        {'line': name.line, 'character': name.hi},
+        {"line": name.line, "character": name.lo},
+        {"line": name.line, "character": name.hi},
     )
 
 
@@ -334,7 +339,7 @@ def highlight_range(source_lines, name):
     # to be a bit more careful to maintain the correct range
     # of the highlighted region relative to the line.
 
-    while line and line[0] in [' ', '\t']:
+    while line and line[0] in [" ", "\t"]:
         line = line[1:]
         lo, hi = lo - 1, hi - 1
 
@@ -357,10 +362,10 @@ def highlight_range(source_lines, name):
             line = line[:-1].rstrip()
             trimmed_hi = True
 
-    return '{}{}\033[4;31m{}\033[0m{}{}'.format(
-        '... ' if trimmed_lo else '',
+    return "{}{}\033[4;31m{}\033[0m{}{}".format(
+        "... " if trimmed_lo else "",
         line[:lo].lstrip(),
         line[lo:hi],
         line[hi:].rstrip(),
-        ' ...' if trimmed_hi else '',
+        " ..." if trimmed_hi else "",
     )
