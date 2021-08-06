@@ -24,9 +24,7 @@ class Name:
         the list will include itself.
         """
         return [
-            Name(a)
-            for a in self.definition.goto_assignments()
-            if a != self.definition
+            Name(a) for a in self.definition.goto() if a != self.definition
         ]
 
     @property

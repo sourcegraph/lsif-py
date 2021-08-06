@@ -118,8 +118,7 @@ class FileIndexer:
             {"language": "py", "value": extract_text(self.source_lines, name)}
         ]
 
-        docstring = name.docstring
-        if docstring:
+        if docstring := name.docstring:
             contents.append(docstring)
 
         # Emit hover tooltip and link it to a result set so that we can
