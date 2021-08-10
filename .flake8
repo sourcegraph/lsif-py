@@ -1,2 +1,2 @@
 [flake8]
-ignore = D
+ignore = D, W503

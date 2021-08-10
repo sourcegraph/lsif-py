@@ -1,1 +1,4 @@
-jedi==0.16.0
+jedi
+pydantic
+stringcase
+click
