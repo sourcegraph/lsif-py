@@ -6,6 +6,7 @@ class Name:
     An object that represents a reference or definition of a
     variable in a particular source file.
     """
+
     def __init__(self, definition):
         self.definition = definition
 
@@ -22,7 +23,9 @@ class Name:
         will only include one object. If this name is a definition,
         the list will include itself.
         """
-        return [Name(a) for a in self.definition.goto_assignments() if a != self.definition]
+        return [
+            Name(a) for a in self.definition.goto() if a != self.definition
+        ]
 
     @property
     def line(self):
@@ -51,11 +54,8 @@ def get_names(source, filename):
     """
     Retrieve a list of Name objects for the given source.
     """
-    definitions = jedi.names(
-        source,
-        path=filename,
-        all_scopes=True,
-        references=True,
+    definitions = jedi.Script(source, path=filename).get_names(
+        all_scopes=True, references=True
     )
 
     return [Name(d) for d in definitions]

@@ -1,3 +1,4 @@
 .vscode
 data.lsif
 .DS_Store
+/venv
