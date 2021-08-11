@@ -21,6 +21,6 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.6",
-    install_requires=["jedi==0.16.0"],
+    python_requires=">=3.8",
+    install_requires=["jedi", "pydantic", "stringcase", "click"],
 )
