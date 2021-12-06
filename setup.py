@@ -9,7 +9,9 @@ setuptools.setup(
     author="Eric Fritz",
     author_email="eric@sourcegraph.com",
     description="Python LSIF Indexer",
-    entry_points={"console_scripts": ["lsif-py=lsif_indexer.script:main"],},
+    entry_points={
+        "console_scripts": ["lsif-py=lsif_indexer.indexer:lsif_py"],
+    },
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/sourcegraph/lsif-py",
@@ -19,6 +21,6 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.6",
-    install_requires=["jedi==0.16.0"],
+    python_requires=">=3.8",
+    install_requires=["jedi", "pydantic", "stringcase", "click"],
 )
