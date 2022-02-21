@@ -1,2 +1,44 @@
+[tool.poetry]
+name = "lsif-py"
+version = "0.0.1"
+description = "Language Server Indexing Format (LSIF) generator for Python"
+authors = ["Eric Fritz <eric@sourcegraph.com>"]
+homepage = "https://github.com/sourcegraph/lsif-py"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+readme = "README.md"
+packages = [
+    { include = "lsif_indexer" },
+]
+
+[tool.poetry.scripts]
+lsif-py = 'lsif_indexer.indexer:lsif_py'
+
+[tool.poetry.dependencies]
+python = ">=3.8,<4.0"
+jedi = "^0.18.1"
+pydantic = "^1.9.0"
+stringcase = "^1.2.0"
+click = "^8.0.4"
+
+[tool.poetry.dev-dependencies]
+black = "^22.1.0"
+flake8 = "^4.0.1"
+semantic-release = "^0.1.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
 [tool.black]
 line-length = 79
+
+[tool.semantic_release]
+version_variable = [
+    "lsif_indexer/__init__.py:__version__",
+    "pyproject.toml:version"
+]
+build_command = "pip install poetry && poetry build"

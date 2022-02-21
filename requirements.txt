@@ -1,4 +1,0 @@
-jedi
-pydantic
-stringcase
-click
