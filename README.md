@@ -1,4 +1,8 @@
-# Python LSIF Indexer ![](https://img.shields.io/badge/status-development-yellow)
+# (Deprecated) Python LSIF Indexer ![](https://img.shields.io/badge/status-development-yellow)
+
+This project is no longer maintained. Please use [scip-python](https://github.com/sourcegraph/scip-python) instead.
+
+See below for the unmaintained documentation on how to use this project.
 
 🚨 This implementation is in its infancy and conforms to the [0.4.0 draft of the LSIF spec](https://github.com/Microsoft/language-server-protocol/blob/master/indexFormat/specification.md).
 
