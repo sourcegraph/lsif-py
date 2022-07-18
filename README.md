@@ -1,4 +1,4 @@
-# (Deprecated) Python LSIF Indexer ![](https://img.shields.io/badge/status-development-yellow)
+# (Deprecated) Python LSIF Indexer ![](https://img.shields.io/badge/status-deprecated-red)
 
 This project is no longer maintained. Please use [scip-python](https://github.com/sourcegraph/scip-python) instead.
 
